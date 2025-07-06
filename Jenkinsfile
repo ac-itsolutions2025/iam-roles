@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    STACK_NAME     = 'acit-eks-iam'
+    STACK_NAME     = 'acit-eks-iam-roles'
     TEMPLATE_FILE  = 'iam-roles.yaml'   // Adjust if filename differs
     REGION         = 'us-east-2'
     ENVIRONMENT    = 'acit'                 // Used for resource naming and exports
