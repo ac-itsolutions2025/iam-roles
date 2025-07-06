@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create IAM roles and instance profile for Amazon EKS Cluster and Node Group
+
+Parameters:
+  Environment:
+    Type: String
+    Default: acit
+    Description: Logical environment or project name used for tagging
+
+Resources:
+
+  ### Role for the EKS Control Plane ###
+  EKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-EKSClusterRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+      Path: /
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  ### Role for the Worker Nodes (Node Group) ###
+  EKSNodeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-EKSNodeInstanceRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Path: /
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  ### Instance Profile for the Node Group ###
+  NodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub "${Environment}-EKSNodeInstanceProfile"
+      Roles:
+        - !Ref EKSNodeInstanceRole
+      Path: /
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  EKSClusterRoleARN:
+    Description: ARN of the EKS Cluster Role
+    Value: !GetAtt EKSClusterRole.Arn
+    Export:
+      Name: !Sub "${Environment}-EKSClusterRoleARN"
+
+  NodeInstanceRoleARN:
+    Description: ARN of the EKS Node Instance Role
+    Value: !GetAtt EKSNodeInstanceRole.Arn
+    Export:
+      Name: !Sub "${Environment}-NodeInstanceRoleARN"
+
+  NodeInstanceProfileName:
+    Description: Name of the EC2 Instance Profile for Node Group
+    Value: !Ref NodeInstanceProfile
+    Export:
+      Name: !Sub "${Environment}-NodeInstanceProfileName"
