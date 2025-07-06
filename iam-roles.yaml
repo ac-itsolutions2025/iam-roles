@@ -24,9 +24,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
       Path: /
-      Tags:
-        - Key: Environment
-          Value: !Ref Environment
 
   ### Role for the Worker Nodes (Node Group) ###
   EKSNodeInstanceRole:
@@ -45,9 +42,6 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
       Path: /
-      Tags:
-        - Key: Environment
-          Value: !Ref Environment
 
   ### Instance Profile for the Node Group ###
   NodeInstanceProfile:
@@ -57,9 +51,6 @@ Resources:
       Roles:
         - !Ref EKSNodeInstanceRole
       Path: /
-      Tags:
-        - Key: Environment
-          Value: !Ref Environment
 
 Outputs:
   EKSClusterRoleARN:
