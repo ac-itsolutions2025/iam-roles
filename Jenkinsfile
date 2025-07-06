@@ -3,8 +3,9 @@ pipeline {
 
   environment {
     STACK_NAME     = 'acit-eks-iam'
-    TEMPLATE_FILE  = 'iam-roles.yaml'
-    ENVIRONMENT    = 'acit'
+    TEMPLATE_FILE  = 'iam-roles.yaml'   // Adjust if filename differs
+    REGION         = 'us-east-2'
+    ENVIRONMENT    = 'acit'                 // Used for resource naming and exports
   }
 
   options {
@@ -15,30 +16,33 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        echo '📦 Checking out IAM CloudFormation template'
+        echo '📦 Checking out repo'
         checkout scm
       }
     }
 
     stage('Deploy IAM Stack') {
       steps {
-        echo '🚀 Deploying IAM resources (global service)'
+        echo '🚀 Deploying IAM stack for EKS cluster and nodegroup'
         sh '''
           aws cloudformation deploy \
             --stack-name "$STACK_NAME" \
             --template-file "$TEMPLATE_FILE" \
+            --region "$REGION" \
             --capabilities CAPABILITY_NAMED_IAM \
-            --parameter-overrides Environment="$ENVIRONMENT"
+            --parameter-overrides \
+              Environment="$ENVIRONMENT"
         '''
       }
     }
 
-    stage('Get Stack Outputs') {
+    stage('Show Stack Outputs') {
       steps {
-        echo '📡 Displaying IAM resource outputs'
+        echo '📡 EKS IAM Role Outputs:'
         sh '''
           aws cloudformation describe-stacks \
             --stack-name "$STACK_NAME" \
+            --region "$REGION" \
             --query "Stacks[0].Outputs[*].[OutputKey, OutputValue]" \
             --output table
         '''
@@ -48,10 +52,10 @@ pipeline {
 
   post {
     success {
-      echo '✅ EKS IAM stack deployed successfully!'
+      echo '✅ IAM stack deployed successfully.'
     }
     failure {
-      echo '❌ Deployment failed. Please check the logs above.'
+      echo '❌ Deployment failed. Please review the logs above.'
     }
   }
 }
