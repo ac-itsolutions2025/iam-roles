@@ -2,10 +2,9 @@ pipeline {
   agent any
 
   environment {
-    STACK_NAME     = 'acit-eks-iam-roles'
-    TEMPLATE_FILE  = 'iam-roles.yaml'   // Adjust if filename differs
-    REGION         = 'us-east-2'
-    ENVIRONMENT    = 'acit'                 // Used for resource naming and exports
+    STACK_NAME     = 'acit-eks-iam'
+    TEMPLATE_FILE  = 'iam-roles.yaml'  // Adjust if file is named differently
+    ENVIRONMENT    = 'acit'                // Used in naming + export values
   }
 
   options {
@@ -16,34 +15,31 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        echo '📦 Checking out repo'
+        echo '📦 Cloning IAM stack template repo'
         checkout scm
       }
     }
 
-    stage('Deploy IAM Stack') {
+    stage('Deploy IAM Roles') {
       steps {
-        echo '🚀 Deploying IAM stack for EKS cluster and nodegroup'
+        echo '🚀 Deploying IAM roles and instance profile (no tags)'
         sh '''
           aws cloudformation deploy \
             --stack-name "$STACK_NAME" \
             --template-file "$TEMPLATE_FILE" \
-            --region "$REGION" \
             --capabilities CAPABILITY_NAMED_IAM \
-            --parameter-overrides \
-              Environment="$ENVIRONMENT"
+            --parameter-overrides Environment="$ENVIRONMENT"
         '''
       }
     }
 
-    stage('Show Stack Outputs') {
+    stage('Print IAM Stack Outputs') {
       steps {
-        echo '📡 EKS IAM Role Outputs:'
+        echo '📡 Retrieving IAM output values'
         sh '''
           aws cloudformation describe-stacks \
             --stack-name "$STACK_NAME" \
-            --region "$REGION" \
-            --query "Stacks[0].Outputs[*].[OutputKey, OutputValue]" \
+            --query "Stacks[0].Outputs[*].[OutputKey,OutputValue]" \
             --output table
         '''
       }
@@ -52,10 +48,10 @@ pipeline {
 
   post {
     success {
-      echo '✅ IAM stack deployed successfully.'
+      echo '✅ IAM resources deployed successfully.'
     }
     failure {
-      echo '❌ Deployment failed. Please review the logs above.'
+      echo '❌ Deployment failed. Review logs above for details.'
     }
   }
 }
